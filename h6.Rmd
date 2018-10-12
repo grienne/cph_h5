@@ -282,9 +282,10 @@ emplo.int <- child.int - fixef(fit.mlm2)[3]
 
 ```{Question 1}
 ##A. y = Rating ~ Applicant + (1|Raters)
-##B. Find counts by aggregating from regression like the last homework; then group by rater, summarise for totals by rater, then mutate
-  ## based on counts as denominator with rater group as numerator
-##C. Would do the mixed effect with indivdual level variables included
+
+##B. Evaluate Y with applicant coefficient derived from lmer()
+
+##C. Would do the mixed effect with individual level variables included and an interaction term. 
 
 
 ```
@@ -304,40 +305,16 @@ coef(fit.mlm2)
 
 ##B
   ##1. 0.044117048
+
   ##2. alpha-j = 3.5 + 2.25 * (.04411) => 3.599
+
   ##3. 3.501325
+
   ##4.3.501325
+
   ##5. alpha-j = 3.5 + .008Age + .38Emp + .14Spouse + 2.21*Alabama
 
 
 
 ```
 
-
-## --------------------------------
-## Mixed-effects model
-## --------------------------------
-## mixed-effects model
-fit.mlm <- lmer(log.days ~ 1 + (1|State),
-                data = dat)
-## put everything into a data frame
-rr <- ranef(fit.mlm, condVar = TRUE)
-mlm.dat <- rr %>% data.frame
-mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
-mlm.dat$counts <- counts$log.days
-    
-## plot estimates by sample size
-x11()
-p <- ggplot(aes(x = counts, y = mean), data = mlm.dat)
-p + geom_point(size = 2) +
-    geom_linerange(aes(ymin = mean - qnorm(0.975) * condsd,
-                       ymax = mean + qnorm(0.975) * condsd),
-                   alpha = 0.6) +
-    geom_hline(yintercept = mean(dat$log.days, na.rm = T),
-               linetype = 'dashed') +
-    scale_x_continuous("Sample size of State j") +
-    scale_y_continuous("Sample mean log days to remission with 95% CIs",
-                       limits = c(-4, 8.5)) +
-    theme_bw()
-
-dev.copy2pdf(file = "mlm_means2.pdf")
