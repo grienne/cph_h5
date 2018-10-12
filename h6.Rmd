@@ -1,0 +1,344 @@
+---
+title: "h5"
+author: "grienne"
+date: "October 10, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Base}
+library(ggplot2)
+library(readxl)
+require(lme4)
+require(dplyr)
+
+dat <- read_excel("EX854_V3_DH_2.xlsx")
+
+```
+
+
+```{r Foundation}
+## -----------------------------------------------------------------
+## Illustration of use of group- and individual-level predictors
+## -----------------------------------------------------------------
+library(ggplot2)
+library(lme4)
+require(dplyr)
+
+dat <- read.csv(file = "~/Dropbox/CPH738_002/data/EX854_V3_DH.csv", header = T,
+                na.strings=c("","NA"))
+
+## handling date observations 
+## Date of first StUD Dx
+dat$StUD_XDt <- as.Date(dat$StUD_XDt)
+## Date of first remission
+dat$remis_dt <- as.Date(dat$remis_dt)
+## Time to remission (in days)
+dat$Days.to.remission <- with(dat,
+                              difftime(remis_dt, StUD_XDt, units = "days")
+                              )
+## make it a numeric variable
+dat$Days.to.remission <- as.numeric(dat$Days.to.remission)
+
+## log-transform days to remission
+dat$log.days <- log(dat$Days.to.remission)
+
+## create a flag for bupropion prescription
+dat$BupFlag <- with(dat,
+                    ifelse(Bupropion == 0, "N", "Y")
+                    )
+
+## recode SUD type to be a categorical variable
+dat$SUD_Type <- with(dat,
+                      ifelse(StUD_Type == 1, "Cocaine",
+                             ifelse(StUD_Type == 2, "Amphetamine",
+                                    "Both")
+                             )
+                     )
+## recode sex
+dat$gender <- as.factor(with(dat, 
+                            ifelse(SEX == 1, 'Male', 'Female')
+                            )
+                        )
+## relationship with employee
+dat$emp <- as.factor(with(dat,
+                          ifelse(EMPREL == 1, "Employee",
+                          ifelse(EMPREL == 2, "Spouse",
+                          ifelse(EMPREL == 3, "Child",
+                                 "Dependent")))))
+## State indicator
+dat$State <- with(dat,
+                  ifelse(EGEOLOC == 41, 'alabama',
+                  ifelse(EGEOLOC == 52, 'arizona',
+                  ifelse(EGEOLOC == 46, 'arkansas',
+                  ifelse(EGEOLOC == 62, 'california',
+                  ifelse(EGEOLOC == 53, 'colorado',
+                  ifelse(EGEOLOC == 4,  'connecticut',
+                  ifelse(EGEOLOC == 32, 'delaware',
+                  ifelse(EGEOLOC == 31, 'district of columbia',
+                  ifelse(EGEOLOC == 33, 'florida',
+                  ifelse(EGEOLOC == 34, 'georgia',
+                  ifelse(EGEOLOC == 54, 'idaho',
+                  ifelse(EGEOLOC == 16, 'illinois',
+                  ifelse(EGEOLOC == 17, 'indiana',
+                  ifelse(EGEOLOC == 22, 'iowa',
+                  ifelse(EGEOLOC == 23, 'kansas',
+                  ifelse(EGEOLOC == 42, 'kentucky',
+                  ifelse(EGEOLOC == 47, 'louisiana',
+                  ifelse(EGEOLOC ==  5, 'maine',
+                  ifelse(EGEOLOC == 35, 'maryland',
+                  ifelse(EGEOLOC ==  6, 'massachusetts',
+                  ifelse(EGEOLOC == 18, 'michigan',
+                  ifelse(EGEOLOC == 24, 'minnesota',
+                  ifelse(EGEOLOC == 43, 'mississippi',
+                  ifelse(EGEOLOC == 25, 'missouri',
+                  ifelse(EGEOLOC == 55, 'montana',
+                  ifelse(EGEOLOC == 26, 'nebraska',
+                  ifelse(EGEOLOC == 56, 'nevada',
+                  ifelse(EGEOLOC ==  7, 'new hampshire',
+                  ifelse(EGEOLOC == 11, 'new jersey',
+                  ifelse(EGEOLOC == 57, 'new mexico',
+                  ifelse(EGEOLOC == 12, 'new york',
+                  ifelse(EGEOLOC == 36, 'north carolina',
+                  ifelse(EGEOLOC == 27, 'north dakota',
+                  ifelse(EGEOLOC == 19, 'ohio',
+                  ifelse(EGEOLOC == 48, 'oklahoma',
+                  ifelse(EGEOLOC == 64, 'oregon',
+                  ifelse(EGEOLOC == 13, 'pennsylvania',
+                  ifelse(EGEOLOC ==  8, 'rhode island',
+                  ifelse(EGEOLOC == 37, 'south carolina',
+                  ifelse(EGEOLOC == 28, 'south dakota',
+                  ifelse(EGEOLOC == 44, 'tennessee',
+                  ifelse(EGEOLOC == 49, 'texas',
+                  ifelse(EGEOLOC == 58, 'utah',
+                  ifelse(EGEOLOC ==  9, 'vermont',
+                  ifelse(EGEOLOC == 38, 'virginia',
+                  ifelse(EGEOLOC == 65, 'washington',
+                  ifelse(EGEOLOC == 39, 'west virginia',
+                  ifelse(EGEOLOC == 20, 'wisconsin',
+                  ifelse(EGEOLOC == 59, 'wyoming',
+                         NA))))))))))))))))))))))))))))))))))))))))))))))))))
+
+## -------------------------------------------------
+## explore state-wide predictors
+## -------------------------------------------------
+## State-level expections of log days to remission
+## --------------------------------------------------------------------
+## mixed-effects model
+fit.mlm <- lmer(log.days ~ 1 + (1|State),
+                data = dat)
+## put everything into a data frame
+rr <- ranef(fit.mlm, condVar = TRUE)
+mlm.dat <- rr %>% data.frame
+mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
+
+## ------------------------------------------------------------------
+## obtain state-level CUD rates: group-level predictor
+## ------------------------------------------------------------------
+tbl.state <- with(dat, table(SUD_Type, State))
+prop.state <- prop.table(tbl.state, margin = 2)[3,]
+
+## put everything into a data frame
+CUD.dat <- data.frame(prop.state)
+CUD.dat$grp <- as.factor(rownames(CUD.dat))
+rownames(CUD.dat) = c()                 #get rid of row names
+
+## list of states that are common to both data sets
+idx <- which(CUD.dat$grp %in% mlm.dat$grp) # WATCH THE ORDER!!!
+CUD.dat <- CUD.dat[idx,]
+
+## merge everything together
+plot.dat <- merge(mlm.dat, CUD.dat, all = T)
+
+## plot estimates by sample size
+p <- ggplot(aes(x = prop.state, y = mean), data = plot.dat)
+p + geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - qnorm(0.975) * condsd,
+                       ymax = mean + qnorm(0.975) * condsd),
+                   alpha = 0.6) +
+    geom_smooth(method='lm',formula=y~x, se = F) +
+    scale_x_continuous("Percent CUD Dx") +
+    scale_y_continuous("Mean log days to remission with 95% CIs") +
+    theme_bw()
+
+## -------------------------------------------
+## Association with Antidepres Rx?
+## -------------------------------------------
+dat$DepFlag <- with(dat,
+                    ifelse(AntiDeps == 0, "N", "Y")
+                    )
+tbl.state <- with(dat,
+                  table(DepFlag, State)
+                  )
+prop.state <- prop.table(tbl.state, margin = 2)[2,]
+
+## put everything into a data frame
+DEP.dat <- data.frame(prop.state)
+DEP.dat$grp <- as.factor(rownames(DEP.dat))
+rownames(DEP.dat) = c()
+
+## list of states that are common to both data sets
+idx <- which(DEP.dat$grp %in% mlm.dat$grp) # WATCH THE ORDER!!!
+DEP.dat <- DEP.dat[idx,]
+
+## merge everything together
+plot.dat <- merge(mlm.dat, DEP.dat, all = T)
+
+## plot estimates by sample size
+p <- ggplot(aes(x = prop.state, y = mean), data = plot.dat)
+p + geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - qnorm(0.975) * condsd,
+                       ymax = mean + qnorm(0.975) * condsd),
+                   alpha = 0.6) +
+    geom_smooth(method='lm',formula=y~x, se = F) +
+    scale_x_continuous("Percent Depression Dx") +
+    scale_y_continuous("Sample mean log days to remission with 95% CIs") +
+    theme_bw()
+
+
+## -------------------------------------------
+## Association with TOB
+## -------------------------------------------
+dat$Tob <- with(dat,
+                    ifelse(Tobacco == 0, "N", "Y")
+                    )
+tbl.state <- with(dat,
+                  table(Tob, State)
+                  )
+prop.state <- prop.table(tbl.state, margin = 2)[2,]
+
+## put everything into a data frame
+TCD.dat <- data.frame(prop.state)
+TCD.dat$grp <- as.factor(rownames(TCD.dat))
+rownames(TCD.dat) = c()
+
+## list of states that are common to both data sets
+idx <- which(TCD.dat$grp %in% mlm.dat$grp) # WATCH THE ORDER!!!
+TCD.dat <- TCD.dat[idx,]
+
+## merge everything together
+plot.dat <- merge(mlm.dat, TCD.dat, all = T)
+
+## plot estimates by sample size
+p <- ggplot(aes(x = prop.state, y = mean), data = plot.dat)
+p + geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - qnorm(0.975) * condsd,
+                       ymax = mean + qnorm(0.975) * condsd),
+                   alpha = 0.6) +
+    geom_smooth(method='lm',formula=y~x, se = F) +
+    scale_x_continuous("Percent TCD Dx") +
+    scale_y_continuous("Mean log days to remission with 95% CIs") +
+    theme_bw()
+
+
+## -------------------------------------------------
+## explore within-state predictors
+## -------------------------------------------------
+## Age by emp relationship
+p = ggplot(aes(x = AGE, y = log.days, colour = emp), data = dat)
+p + geom_point(size = 3, alpha = 0.5) +
+    geom_smooth(method='lm',formula=y~x, se = F) +
+    facet_wrap( ~ State, ncol = 5)
+
+## Age by gender 
+p = ggplot(aes(x = AGE, y = log.days, colour = gender), data = dat)
+p + geom_point(size = 3, alpha = 0.5) +
+    geom_smooth(method='lm',formula=y~x, se = F) +
+    facet_wrap( ~ State, ncol = 5)
+
+## -------------------------------------------
+## merge data for the overall model
+## -------------------------------------------
+## rename "grp" as "State" to merge
+names(plot.dat)[1] <- c("State")
+
+## merge state-level and individual-level data
+dat2 <- merge(dat, plot.dat, by = "State", all = T)
+
+fit.mlm2 <- lmer(log.days ~ AGE + emp + prop.state + (1 | State), data = dat2)
+summary(fit.mlm2)
+
+fixef(fit.mlm2)
+
+ranef(fit.mlm2)
+
+## ----------------------------------------------
+## plot fitted lines per State
+## ----------------------------------------------
+## intercepts by state among children
+child.int <- ranef(fit.mlm2)$State + fixef(fit.mlm2)[1] + fixef(fit.mlm2)[5] * plot.dat$prop.state
+
+## intercepts by state among "spouse"
+spouse.int <- child.int - fixef(fit.mlm2)[4]
+
+## intercepts by state among "employee"
+emplo.int <- child.int - fixef(fit.mlm2)[3]
+
+
+```
+
+```{Question 1}
+##A. y = Rating ~ Applicant + (1|Raters)
+##B. Find counts by aggregating from regression like the last homework; then group by rater, summarise for totals by rater, then mutate
+  ## based on counts as denominator with rater group as numerator
+##C. Would do the mixed effect with indivdual level variables included
+
+
+```
+
+```{r Question 2}
+
+fit.mlm2 <- lmer(log.days ~ AGE + emp + prop.state + (1 | State), data = dat2)
+summary(fit.mlm2)
+fixef(fit.mlm2)
+ranef(fit.mlm2)
+coef(fit.mlm2)
+
+##A
+  ##1. y -> log days to remission
+  ##2. Age & Employment
+  ##3. State Proportion (prop.state)
+
+##B
+  ##1.3.545867
+  ##2.
+  ##3.
+  ##4.
+  ##5.   
+
+
+
+
+```
+
+
+## --------------------------------
+## Mixed-effects model
+## --------------------------------
+## mixed-effects model
+fit.mlm <- lmer(log.days ~ 1 + (1|State),
+                data = dat)
+## put everything into a data frame
+rr <- ranef(fit.mlm, condVar = TRUE)
+mlm.dat <- rr %>% data.frame
+mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
+mlm.dat$counts <- counts$log.days
+    
+## plot estimates by sample size
+x11()
+p <- ggplot(aes(x = counts, y = mean), data = mlm.dat)
+p + geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - qnorm(0.975) * condsd,
+                       ymax = mean + qnorm(0.975) * condsd),
+                   alpha = 0.6) +
+    geom_hline(yintercept = mean(dat$log.days, na.rm = T),
+               linetype = 'dashed') +
+    scale_x_continuous("Sample size of State j") +
+    scale_y_continuous("Sample mean log days to remission with 95% CIs",
+                       limits = c(-4, 8.5)) +
+    theme_bw()
+
+dev.copy2pdf(file = "mlm_means2.pdf")
