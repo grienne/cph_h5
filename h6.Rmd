@@ -20,7 +20,7 @@ dat <- read_excel("EX854_V3_DH_2.xlsx")
 ```
 
 
-```{r Foundation}
+```{r Foundation, echo=FALSE}
 ## -----------------------------------------------------------------
 ## Illustration of use of group- and individual-level predictors
 ## -----------------------------------------------------------------
@@ -281,13 +281,13 @@ emplo.int <- child.int - fixef(fit.mlm2)[3]
 ```
 
 ```{Question 1}
-##A. y = Rating ~ Applicant + (1|Raters)
+A. y = Rating ~ Applicant + (1|Raters)
 
-##B.  ## rr <- ranef(fit.mlm, condVar = TRUE)
-      ## mlm.dat <- rr %>% data.frame
-      ## mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
+B. rr <- ranef(fit.mlm, condVar = TRUE)
+      mlm.dat <- rr %>% data.frame
+        mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
 
-##C. ranef(y) 
+C. ranef(y) 
 
 
 ```
