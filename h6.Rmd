@@ -283,9 +283,11 @@ emplo.int <- child.int - fixef(fit.mlm2)[3]
 ```{Question 1}
 ##A. y = Rating ~ Applicant + (1|Raters)
 
-##B. Evaluate Y with applicant coefficient derived from lmer()
+##B.  ## rr <- ranef(fit.mlm, condVar = TRUE)
+      ## mlm.dat <- rr %>% data.frame
+      ## mlm.dat$mean <- mlm.dat$condval + fixef(fit.mlm)
 
-##C. Would do the mixed effect with individual level variables included and an interaction term. 
+##C. ranef(y) 
 
 
 ```
@@ -304,15 +306,18 @@ coef(fit.mlm2)
   ##3. State Proportion (prop.state)
 
 ##B
-  ##1. 0.044117048
+  ##1. 2.213991
 
-  ##2. alpha-j = 3.5 + 2.25 * (.04411) => 3.599
+q2_mlm <- lmer(mean_tobacco ~ prop.state, dat = dat)
+
+  ##2. gamma(i) = alpha(j) - gamma(0) => .043
 
   ##3. 3.501325
 
   ##4.3.501325
 
-  ##5. alpha-j = 3.5 + .008Age + .38Emp + .14Spouse + 2.21*Alabama
+  ##5. alpha-j = 3.5 + .008Age + .38Emp + .14Spouse + 2.21*(Alabama = .0578) 
+      #Alabama proportion value returned from prop.state table
 
 
 
