@@ -308,19 +308,10 @@ coef(fit.mlm2)
 ##B
   ##1. 2.213991
 
-q2_mlm <- lmer(mean_tobacco ~ prop.state, dat = dat)
-
   ##2. gamma(i) = alpha(j) - gamma(0) => .043
 
   ##3. 3.501325
-<<<<<<< HEAD
   ##4. 3.501325
-  ##5. alpha-j = 3.5 + .008Age + .38Emp + .14Spouse + 2.21*Alabama
-=======
->>>>>>> e718cd5edef32e8811d92c4a530f145c7963cf8d
-
-  ##4.3.501325
-
   ##5. alpha-j = 3.5 + .008Age + .38Emp + .14Spouse + 2.21*(Alabama = .0578) 
       #Alabama proportion value returned from prop.state table
 
